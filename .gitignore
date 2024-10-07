@@ -72,3 +72,6 @@ mono_crash.*
 
 # Backup files
 *~
+
+# Ignore .env file
+.env
