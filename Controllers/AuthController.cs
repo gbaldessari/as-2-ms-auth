@@ -5,24 +5,17 @@ using ms_auth.Services;
 namespace ms_auth.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    [Route("[controller]")]
+    public class AuthController(IAuthService authService) : ControllerBase
     {
-        private readonly IAuthService _authService;
-
-        public AuthController(IAuthService authService)
-        {
-            _authService = authService;
-        }
+        private readonly IAuthService _authService = authService;
 
         [HttpPost("login")]
         public IActionResult Login(UserLogin userLogin)
         {
-            var token = _authService.Authenticate(userLogin);
-            if (token == null)
-                return Unauthorized();
-
-            return Ok(new { Token = token });
+            Tokens tokens = _authService.Authenticate(userLogin);
+            if (tokens == null) return Unauthorized();
+            return Ok(tokens);
         }
 
         [HttpPost("register")]
@@ -35,7 +28,21 @@ namespace ms_auth.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Message = ex.Message });
+                return BadRequest(new { ex.Message });
+            }
+        }
+
+        [HttpPost("refresh-token")]
+        public IActionResult RefreshToken(string refreshToken)
+        {
+            try
+            {
+                var payload = _authService.RefreshToken(refreshToken);
+                return Ok(payload);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { ex.Message });
             }
         }
     }

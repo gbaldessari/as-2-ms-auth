@@ -14,8 +14,21 @@ Env.Load();
 var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? throw new ArgumentNullException("JWT_ISSUER", "JWT Issuer cannot be null.");
 var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? throw new ArgumentNullException("JWT_AUDIENCE", "JWT Audience cannot be null.");
 var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? throw new ArgumentNullException("JWT_KEY", "JWT Key cannot be null.");
-var mongoConnectionString = Environment.GetEnvironmentVariable("MONGO_CONNECTION_STRING") ?? throw new ArgumentNullException("MONGO_CONNECTION_STRING", "MongoDB Connection String cannot be null.");
-var mongoDatabaseName = Environment.GetEnvironmentVariable("MONGO_DATABASE_NAME") ?? throw new ArgumentNullException("MONGO_DATABASE_NAME", "MongoDB Database Name cannot be null.");
+var mongoConnectionString = Environment.GetEnvironmentVariable("MONGO_CONNECTION_STRING");
+var mongoDatabaseName = Environment.GetEnvironmentVariable("MONGO_DATABASE_NAME");
+
+// Probar la conexión a MongoDB al inicio
+try
+{
+    var mongoClient = new MongoClient(mongoConnectionString);
+    var database = mongoClient.GetDatabase(mongoDatabaseName);
+    Console.WriteLine("Conexión a MongoDB exitosa");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Error al conectar con MongoDB: {ex.Message}");
+}
+
 
 // Configurar autenticación JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
