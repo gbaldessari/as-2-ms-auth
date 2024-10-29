@@ -31,8 +31,7 @@ catch (Exception ex)
 
 
 // Configurar autenticación JWT
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -52,12 +51,10 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Registrar el cliente de MongoDB
-builder.Services.AddSingleton<IMongoClient, MongoClient>(sp =>
-    new MongoClient(mongoConnectionString));
+builder.Services.AddSingleton<IMongoClient, MongoClient>(sp => new MongoClient(mongoConnectionString));
 
 // Registrar la base de datos de MongoDB
-builder.Services.AddScoped(sp =>
-    sp.GetRequiredService<IMongoClient>().GetDatabase(mongoDatabaseName));
+builder.Services.AddScoped(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(mongoDatabaseName));
 
 // Construir la aplicación
 var app = builder.Build();

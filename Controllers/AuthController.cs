@@ -13,7 +13,7 @@ namespace ms_auth.Controllers
         [HttpPost("login")]
         public IActionResult Login(UserLogin userLogin)
         {
-            Tokens tokens = _authService.Authenticate(userLogin);
+            Response tokens = _authService.Authenticate(userLogin);
             if (tokens == null) return Unauthorized();
             return Ok(tokens);
         }

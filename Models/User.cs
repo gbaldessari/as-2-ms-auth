@@ -18,7 +18,7 @@ namespace ms_auth.Models {
     public required string Password { get; set; }
   }
 
-  public class Tokens {
+  public class Response {
     public string? Token { get; set; }
     public string? RefreshToken { get; set; }
   }
