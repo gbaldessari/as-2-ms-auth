@@ -23,7 +23,7 @@ namespace ms_auth.Services
         public Response Authenticate(UserLogin userLogin)
         {
             var user = _usersCollection
-                .Find(u => u.Username == userLogin.Username)
+                .Find(u => u.Email == userLogin.Email)
                 .FirstOrDefault();
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(userLogin.Password, user.Password))
@@ -43,7 +43,7 @@ namespace ms_auth.Services
             {
                 Subject = new ClaimsIdentity(
                 [
-                    new Claim(ClaimTypes.Name, user.Username),
+                    new Claim(ClaimTypes.Name, user.Email),
                     new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
                 ]),
                 Expires = DateTime.UtcNow.AddMinutes(60),
@@ -67,7 +67,7 @@ namespace ms_auth.Services
 
         public async Task Register(UserRegister userRegister)
         {
-            var existingUser = await _usersCollection.Find(u => u.Username == userRegister.Username).FirstOrDefaultAsync();
+            var existingUser = await _usersCollection.Find(u => u.Email == userRegister.Email).FirstOrDefaultAsync();
             if (existingUser != null)
             {
                 throw new Exception("User already exists.");
@@ -85,8 +85,11 @@ namespace ms_auth.Services
 
             var user = new User
             {
-                Username = userRegister.Username,
-                Password = hashedPassword
+                Email = userRegister.Email,
+                Password = hashedPassword,
+                Name = userRegister.Name,
+                LastName = userRegister.LastName,
+                IsAdmin = false
             };
 
             await _usersCollection.InsertOneAsync(user);
@@ -98,7 +101,7 @@ namespace ms_auth.Services
             .Find(u => u.RefreshToken == refreshToken && u.RefreshTokenExpiryTime > DateTime.UtcNow)
             .FirstOrDefault() ?? throw new Exception("Invalid refresh token.");
 
-            Response obj = Authenticate(new UserLogin { Username = user.Username, Password = user.Password });
+            Response obj = Authenticate(new UserLogin { Email = user.Email, Password = user.Password });
             string newToken = obj.Token ?? throw new InvalidOperationException("Token generation failed.");
             var newRefreshToken = GenerateRefreshToken();
             user.Token = newToken;

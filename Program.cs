@@ -5,23 +5,25 @@ using DotNetEnv;
 using ms_auth.Services;
 using MongoDB.Driver;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Cargar las variables de entorno desde el archivo .env
 Env.Load();
 
 // Leer y validar las variables de entorno requeridas
-var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? throw new ArgumentNullException("JWT_ISSUER", "JWT Issuer cannot be null.");
-var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? throw new ArgumentNullException("JWT_AUDIENCE", "JWT Audience cannot be null.");
-var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? throw new ArgumentNullException("JWT_KEY", "JWT Key cannot be null.");
-var mongoConnectionString = Environment.GetEnvironmentVariable("MONGO_CONNECTION_STRING");
-var mongoDatabaseName = Environment.GetEnvironmentVariable("MONGO_DATABASE_NAME");
+string jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? throw new ArgumentNullException("JWT_ISSUER", "JWT Issuer cannot be null.");
+string jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? throw new ArgumentNullException("JWT_AUDIENCE", "JWT Audience cannot be null.");
+string jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? throw new ArgumentNullException("JWT_KEY", "JWT Key cannot be null.");
+string? mongoConnectionString = Environment.GetEnvironmentVariable("MONGO_CONNECTION_STRING");
+string? mongoDatabaseName = Environment.GetEnvironmentVariable("MONGO_DATABASE_NAME");
+
 
 // Probar la conexión a MongoDB al inicio
+IMongoDatabase? database = null;
 try
 {
-    var mongoClient = new MongoClient(mongoConnectionString);
-    var database = mongoClient.GetDatabase(mongoDatabaseName);
+    MongoClient mongoClient = new(mongoConnectionString);
+    database = mongoClient.GetDatabase(mongoDatabaseName);
     Console.WriteLine("Conexión a MongoDB exitosa");
 }
 catch (Exception ex)
@@ -57,7 +59,7 @@ builder.Services.AddSingleton<IMongoClient, MongoClient>(sp => new MongoClient(m
 builder.Services.AddScoped(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(mongoDatabaseName));
 
 // Construir la aplicación
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 // Usar autenticación y autorización
 app.UseAuthentication();
@@ -65,6 +67,17 @@ app.UseAuthorization();
 
 // Mapear los controladores
 app.MapControllers();
+
+// Registrar el servicio de escucha RabbitMQ
+if (database != null)
+{
+    RabbitMQListener rabbitMQListener = new(new AuthService(builder.Configuration, database));
+    rabbitMQListener.Start();
+}
+else
+{
+    Console.WriteLine("No se pudo iniciar RabbitMQListener debido a un error en la conexión a MongoDB.");
+}
 
 // Ejecutar la aplicación
 app.Run();
