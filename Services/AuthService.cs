@@ -18,7 +18,7 @@ namespace ms_auth.Services
     public class AuthService(IConfiguration config, IMongoDatabase mongoDatabase) : IAuthService
     {
         private readonly IConfiguration _config = config;
-        private readonly IMongoCollection<User> _usersCollection = mongoDatabase.GetCollection<User>("Users");
+        private readonly IMongoCollection<User> _usersCollection = mongoDatabase.GetCollection<User>("users");
 
         public Response Authenticate(UserLogin userLogin)
         {

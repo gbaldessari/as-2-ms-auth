@@ -1,5 +1,9 @@
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
 namespace ms_auth.Models {
   public class User {
+    [BsonRepresentation(BsonType.String)]
     public Guid Id { get; set; }
     public required string Name { get; set; }
     public required string LastName { get; set; }

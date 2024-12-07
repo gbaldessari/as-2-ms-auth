@@ -10,7 +10,7 @@ namespace ms_auth.Controllers
     {
         private readonly IAuthService _authService = authService;
 
-        [HttpPost("login")]
+        [HttpGet("login")]
         public IActionResult Login(UserLogin userLogin)
         {
             Response tokens = _authService.Authenticate(userLogin);
@@ -19,7 +19,7 @@ namespace ms_auth.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register(UserRegister userRegister)
+        public async Task<IActionResult> Register([FromBody] UserRegister userRegister)
         {
             try
             {
@@ -32,7 +32,7 @@ namespace ms_auth.Controllers
             }
         }
 
-        [HttpPost("refresh-token")]
+        [HttpGet("refresh-token")]
         public IActionResult RefreshToken(string refreshToken)
         {
             try

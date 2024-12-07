@@ -68,16 +68,5 @@ app.UseAuthorization();
 // Mapear los controladores
 app.MapControllers();
 
-// Registrar el servicio de escucha RabbitMQ
-if (database != null)
-{
-    RabbitMQListener rabbitMQListener = new(new AuthService(builder.Configuration, database));
-    rabbitMQListener.Start();
-}
-else
-{
-    Console.WriteLine("No se pudo iniciar RabbitMQListener debido a un error en la conexión a MongoDB.");
-}
-
 // Ejecutar la aplicación
 app.Run();
