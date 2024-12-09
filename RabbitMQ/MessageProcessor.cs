@@ -19,12 +19,16 @@ public class MessageProcessor : IMessageProcessor
         UserMessage userMessage;
         try
         {
-            userMessage = JsonSerializer.Deserialize<UserMessage>(message) ?? throw new InvalidOperationException("Deserialized message is null");
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+            userMessage = JsonSerializer.Deserialize<UserMessage>(message, options) ?? throw new InvalidOperationException("Deserialized message is null");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error deserializing message: {ex.Message}");
-            SendResponseToRabbitMQ(new { Status = "Error", ex.Message });
+            SendResponseToRabbitMQ(new { Status = "Error", Message = ex.Message });
             return;
         }
 
@@ -141,6 +145,7 @@ public class UserMessage
 {
     public required Pattern Pattern { get; set; }
     public required Data Data { get; set; }
+    public required string Id { get; set; }
 }
 
 public class Pattern
