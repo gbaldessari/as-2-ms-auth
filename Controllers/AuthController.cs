@@ -6,15 +6,17 @@ namespace ms_auth.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class AuthController(IAuthService authService) : ControllerBase
+    public class AuthController(IAuthService authService, RabbitMQClient rabbitMQClient) : ControllerBase
     {
         private readonly IAuthService _authService = authService;
+        private readonly RabbitMQClient _rabbitMQClient = rabbitMQClient;
 
-        [HttpGet("login")]
-        public IActionResult Login(UserLogin userLogin)
+        [HttpPost("login")]
+        public async Task<IActionResult> Login(UserLogin userLogin)
         {
-            Response tokens = _authService.Authenticate(userLogin);
+            LoginResult tokens = await _authService.Authenticate(userLogin);
             if (tokens == null) return Unauthorized();
+            _rabbitMQClient.Publish("User logged in: " + userLogin.Email);
             return Ok(tokens);
         }
 
@@ -24,6 +26,7 @@ namespace ms_auth.Controllers
             try
             {
                 await _authService.Register(userRegister);
+                _rabbitMQClient.Publish("User registered: " + userRegister.Email);
                 return Ok("User registered successfully.");
             }
             catch (Exception ex)
@@ -32,12 +35,13 @@ namespace ms_auth.Controllers
             }
         }
 
-        [HttpGet("refresh-token")]
+        [HttpPost("refresh-token")]
         public IActionResult RefreshToken(string refreshToken)
         {
             try
             {
                 var payload = _authService.RefreshToken(refreshToken);
+                _rabbitMQClient.Publish("Token refreshed for: " + refreshToken);
                 return Ok(payload);
             }
             catch (Exception ex)

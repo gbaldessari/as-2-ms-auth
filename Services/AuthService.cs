@@ -10,15 +10,21 @@ namespace ms_auth.Services
 {
     public interface IAuthService
     {
-        Response Authenticate(UserLogin user);
         Response RefreshToken(string refreshToken);
+        Task<LoginResult> Authenticate(UserLogin userLogin);
         Task Register(UserRegister userRegister);
     }
 
-    public class AuthService(IConfiguration config, IMongoDatabase mongoDatabase) : IAuthService
+    public class AuthService : IAuthService
     {
-        private readonly IConfiguration _config = config;
-        private readonly IMongoCollection<User> _usersCollection = mongoDatabase.GetCollection<User>("users");
+        private readonly IConfiguration _config;
+        private readonly IMongoCollection<User> _usersCollection;
+
+        public AuthService(IConfiguration config, IMongoDatabase mongoDatabase)
+        {
+            _config = config ?? throw new ArgumentNullException(nameof(config));
+            _usersCollection = mongoDatabase.GetCollection<User>("users");
+        }
 
         public Response Authenticate(UserLogin userLogin)
         {
@@ -62,37 +68,34 @@ namespace ms_auth.Services
 
             _usersCollection.ReplaceOne(u => u.Id == user.Id, user);
 
-            return new Response { Token = jwtToken, RefreshToken = refreshToken};
+            return new Response { Token = jwtToken, RefreshToken = refreshToken };
         }
 
         public async Task Register(UserRegister userRegister)
         {
+            // Verificar si el usuario ya existe
             var existingUser = await _usersCollection.Find(u => u.Email == userRegister.Email).FirstOrDefaultAsync();
             if (existingUser != null)
             {
-                throw new Exception("User already exists.");
+                throw new InvalidOperationException("User already exists.");
             }
 
-            string hashedPassword = string.Empty;
-            try
+            // Crear un nuevo usuario
+            var newUser = new User
             {
-                hashedPassword = BCrypt.Net.BCrypt.HashPassword(userRegister.Password);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Error al hashear la contraseña: {ex.Message}");
-            }
-
-            var user = new User
-            {
-                Email = userRegister.Email,
-                Password = hashedPassword,
+                Id = Guid.NewGuid(),
                 Name = userRegister.Name,
                 LastName = userRegister.LastName,
-                IsAdmin = false
+                Email = userRegister.Email,
+                Password = BCrypt.Net.BCrypt.HashPassword(userRegister.Password),
+                IsAdmin = false,
+                Token = null,
+                RefreshToken = null,
+                RefreshTokenExpiryTime = null
             };
 
-            await _usersCollection.InsertOneAsync(user);
+            // Insertar el nuevo usuario en la colección
+            await _usersCollection.InsertOneAsync(newUser);
         }
 
         public Response RefreshToken(string refreshToken)
@@ -109,7 +112,7 @@ namespace ms_auth.Services
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
 
             _usersCollection.ReplaceOne(u => u.Id == user.Id, user);
-            return new Response{ Token = newToken, RefreshToken = newRefreshToken };
+            return new Response { Token = newToken, RefreshToken = newRefreshToken };
         }
 
         public string GenerateRefreshToken()
@@ -118,6 +121,11 @@ namespace ms_auth.Services
             using var rng = RandomNumberGenerator.Create();
             rng.GetBytes(randomBytes);
             return Convert.ToBase64String(randomBytes);
+        }
+
+        Task<LoginResult> IAuthService.Authenticate(UserLogin userLogin)
+        {
+            throw new NotImplementedException();
         }
     }
 }
