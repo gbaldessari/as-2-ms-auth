@@ -13,6 +13,8 @@ namespace ms_auth.Services
         Response RefreshToken(string refreshToken);
         Task<LoginResult> Authenticate(UserLogin userLogin);
         Task Register(UserRegister userRegister);
+        Task ForgotPassword(string email);
+        Task ResetPassword(string resetToken, string newPassword);
     }
 
     public class AuthService : IAuthService
@@ -26,7 +28,7 @@ namespace ms_auth.Services
             _usersCollection = mongoDatabase.GetCollection<User>("users");
         }
 
-        public Response Authenticate(UserLogin userLogin)
+        public Task<LoginResult> Authenticate(UserLogin userLogin)
         {
             var user = _usersCollection
                 .Find(u => u.Email == userLogin.Email)
@@ -68,19 +70,17 @@ namespace ms_auth.Services
 
             _usersCollection.ReplaceOne(u => u.Id == user.Id, user);
 
-            return new Response { Token = jwtToken, RefreshToken = refreshToken };
+            return Task.FromResult(new LoginResult { Token = jwtToken, RefreshToken = refreshToken });
         }
 
         public async Task Register(UserRegister userRegister)
         {
-            // Verificar si el usuario ya existe
             var existingUser = await _usersCollection.Find(u => u.Email == userRegister.Email).FirstOrDefaultAsync();
             if (existingUser != null)
             {
                 throw new InvalidOperationException("User already exists.");
             }
 
-            // Crear un nuevo usuario
             var newUser = new User
             {
                 Id = Guid.NewGuid(),
@@ -94,7 +94,6 @@ namespace ms_auth.Services
                 RefreshTokenExpiryTime = null
             };
 
-            // Insertar el nuevo usuario en la colección
             await _usersCollection.InsertOneAsync(newUser);
         }
 
@@ -104,7 +103,8 @@ namespace ms_auth.Services
             .Find(u => u.RefreshToken == refreshToken && u.RefreshTokenExpiryTime > DateTime.UtcNow)
             .FirstOrDefault() ?? throw new Exception("Invalid refresh token.");
 
-            Response obj = Authenticate(new UserLogin { Email = user.Email, Password = user.Password });
+            var loginResult = Authenticate(new UserLogin { Email = user.Email, Password = user.Password }).Result;
+            var obj = new Response { Token = loginResult.Token, RefreshToken = loginResult.RefreshToken };
             string newToken = obj.Token ?? throw new InvalidOperationException("Token generation failed.");
             var newRefreshToken = GenerateRefreshToken();
             user.Token = newToken;
@@ -123,9 +123,37 @@ namespace ms_auth.Services
             return Convert.ToBase64String(randomBytes);
         }
 
-        Task<LoginResult> IAuthService.Authenticate(UserLogin userLogin)
+        public async Task ForgotPassword(string email)
         {
-            throw new NotImplementedException();
+            var user = await _usersCollection.Find(u => u.Email == email).FirstOrDefaultAsync();
+            if (user == null)
+            {
+                throw new InvalidOperationException("User does not exist.");
+            }
+
+            var resetToken = Guid.NewGuid().ToString();
+            user.ResetPasswordToken = resetToken;
+            user.ResetPasswordExpiry = DateTime.UtcNow.AddHours(1);
+
+            await _usersCollection.ReplaceOneAsync(u => u.Id == user.Id, user);
+
+            var emailService = new EmailService();
+            await emailService.SendPasswordResetEmail(user.Email, resetToken);
+        }
+
+        public async Task ResetPassword(string resetToken, string newPassword)
+        {
+            var user = await _usersCollection.Find(u => u.ResetPasswordToken == resetToken && u.ResetPasswordExpiry > DateTime.UtcNow).FirstOrDefaultAsync();
+            if (user == null)
+            {
+                throw new InvalidOperationException("Invalid or expired password reset token.");
+            }
+
+            user.Password = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            user.ResetPasswordToken = null;
+            user.ResetPasswordExpiry = null;
+
+            await _usersCollection.ReplaceOneAsync(u => u.Id == user.Id, user);
         }
     }
 }

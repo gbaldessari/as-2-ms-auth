@@ -49,5 +49,54 @@ namespace ms_auth.Controllers
                 return BadRequest(new { ex.Message });
             }
         }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            if (string.IsNullOrEmpty(request.Email))
+            {
+                return BadRequest("Email is required.");
+            }
+
+            try
+            {
+                await _authService.ForgotPassword(request.Email);
+                return Ok("Password reset token sent to email.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            if (string.IsNullOrEmpty(request.ResetToken) || string.IsNullOrEmpty(request.NewPassword))
+            {
+                return BadRequest("Reset token and new password are required.");
+            }
+
+            try
+            {
+                await _authService.ResetPassword(request.ResetToken, request.NewPassword);
+                return Ok("Password has been reset.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
+}
+
+public class ForgotPasswordRequest
+{
+    public required string Email { get; set; }
+}
+
+public class ResetPasswordRequest
+{
+    public required string ResetToken { get; set; }
+    public required string NewPassword { get; set; }
 }

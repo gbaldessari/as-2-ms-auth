@@ -1,8 +1,10 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace ms_auth.Models {
-  public class User {
+namespace ms_auth.Models
+{
+  public class User
+  {
     [BsonRepresentation(BsonType.String)]
     public Guid Id { get; set; }
     public required string Name { get; set; }
@@ -13,21 +15,26 @@ namespace ms_auth.Models {
     public string? Token { get; set; }
     public string? RefreshToken { get; set; }
     public DateTime? RefreshTokenExpiryTime { get; set; }
+    public string? ResetPasswordToken { get; set; }
+    public DateTime? ResetPasswordExpiry { get; set; }
   }
 
-  public class UserRegister {
+  public class UserRegister
+  {
     public required string Name { get; set; }
     public required string LastName { get; set; }
     public required string Email { get; set; }
     public required string Password { get; set; }
   }
 
-  public class UserLogin {
+  public class UserLogin
+  {
     public required string Email { get; set; }
     public required string Password { get; set; }
   }
 
-  public class Response {
+  public class Response
+  {
     public string? Token { get; set; }
     public string? RefreshToken { get; set; }
   }
