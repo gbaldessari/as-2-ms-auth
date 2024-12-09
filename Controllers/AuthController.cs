@@ -6,18 +6,29 @@ namespace ms_auth.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class AuthController(IAuthService authService, RabbitMQClient rabbitMQClient) : ControllerBase
+    public class AuthController(IAuthService authService, IRabbitMQClient rabbitMQClient) : ControllerBase
     {
         private readonly IAuthService _authService = authService;
-        private readonly RabbitMQClient _rabbitMQClient = rabbitMQClient;
+        private readonly IRabbitMQClient _rabbitMQClient = rabbitMQClient;
 
         [HttpPost("login")]
         public async Task<IActionResult> Login(UserLogin userLogin)
         {
-            LoginResult tokens = await _authService.Authenticate(userLogin);
-            if (tokens == null) return Unauthorized();
-            _rabbitMQClient.Publish("User logged in: " + userLogin.Email);
-            return Ok(tokens);
+            try
+            {
+                LoginResult tokens = await _authService.Authenticate(userLogin);
+                if (tokens == null) return Unauthorized();
+                _rabbitMQClient.Publish("User logged in: " + userLogin.Email);
+                return Ok(tokens);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Unauthorized();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { ex.Message });
+            }
         }
 
         [HttpPost("register")]

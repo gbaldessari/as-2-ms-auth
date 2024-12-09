@@ -4,7 +4,13 @@ using System.Text;
 
 namespace ms_auth.Services
 {
-    public class RabbitMQClient : IDisposable
+    public interface IRabbitMQClient
+{
+    void Publish(string message);
+    public void Consume();
+    public void Dispose();
+}
+    public class RabbitMQClient : IRabbitMQClient
     {
         private readonly IConnection _connection;
         private readonly IModel _channel;
