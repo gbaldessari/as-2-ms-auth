@@ -54,7 +54,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Registrar el cliente de MongoDB
 builder.Services.AddSingleton<IMongoClient, MongoClient>(sp => new MongoClient(mongoConnectionString));
-builder.Services.AddSingleton<RabbitMQClient>();
+builder.Services.AddSingleton<IRabbitMQClient, RabbitMQClient>(); // Registrar IRabbitMQClient
 builder.Services.AddScoped<IMessageProcessor, MessageProcessor>();
 
 // Registrar la base de datos de MongoDB
@@ -77,7 +77,7 @@ app.MapControllers();
 // Iniciar el consumidor de RabbitMQ
 using (var scope = app.Services.CreateScope())
 {
-    var rabbitMQClient = scope.ServiceProvider.GetRequiredService<RabbitMQClient>();
+    var rabbitMQClient = scope.ServiceProvider.GetRequiredService<IRabbitMQClient>();
     rabbitMQClient.Consume();
 }
 
