@@ -62,6 +62,11 @@ builder.Services.AddScoped(sp => sp.GetRequiredService<IMongoClient>().GetDataba
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment()) {
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
 // Usar autenticación y autorización
 app.UseAuthentication();
 app.UseAuthorization();
