@@ -62,6 +62,7 @@ namespace ms_auth.RabbitMQ
                            exclusive: false,
                            autoDelete: false,
                            arguments: null);
+      
     }
 
     /// <summary>

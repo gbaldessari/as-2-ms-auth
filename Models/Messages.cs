@@ -25,7 +25,7 @@ namespace ms_auth.Models
     /// <summary>
     /// Datos del mensaje.
     /// </summary>
-    public required Data Data { get; set; }
+    public required RegisterData Data { get; set; }
 
     /// <summary>
     /// Identificador del mensaje.
@@ -47,7 +47,7 @@ namespace ms_auth.Models
   /// <summary>
   /// Representa los datos de un mensaje.
   /// </summary>
-  public class Data
+  public class RegisterData
   {
     /// <summary>
     /// Correo electrónico del usuario.

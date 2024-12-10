@@ -4,6 +4,8 @@ using System.Text;
 using DotNetEnv;
 using ms_auth.Services;
 using MongoDB.Driver;
+using ms_auth.RabbitMQ;
+using ms_auth.Models;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -52,7 +54,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Registrar el cliente de MongoDB
 builder.Services.AddSingleton<IMongoClient, MongoClient>(sp => new MongoClient(mongoConnectionString));
-builder.Services.AddSingleton<RabbitMQClient>(); // Cambiado a Singleton
+builder.Services.AddSingleton<RabbitMQClient>();
 builder.Services.AddScoped<IMessageProcessor, MessageProcessor>();
 
 // Registrar la base de datos de MongoDB

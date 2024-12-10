@@ -1,9 +1,6 @@
-using System;
-using System.Text;
 using System.Text.Json;
 using ms_auth.Models;
 using ms_auth.Services;
-using RabbitMQ.Client;
 
 public class MessageProcessor : IMessageProcessor
 {
@@ -36,11 +33,8 @@ public class MessageProcessor : IMessageProcessor
     catch (Exception ex)
     {
       Console.WriteLine($"Error deserializing message: {ex.Message}");
-      SendResponseToRabbitMQ(new { Status = "Error", Message = ex.Message });
       return;
     }
-
-    Console.WriteLine($"Processing message for user: {userMessage.Data.Email}");
 
     if (userMessage.Pattern.Cmd == "register_user")
     {
@@ -56,7 +50,7 @@ public class MessageProcessor : IMessageProcessor
   /// Registra un nuevo usuario.
   /// </summary>
   /// <param name="userMessage">El mensaje del usuario que contiene los detalles de registro.</param>
-  private async Task RegisterUser(UserMessage userMessage)
+  private async Task<object> RegisterUser(UserMessage userMessage)
   {
     Console.WriteLine("Registering user...");
     var userRegister = new UserRegister
@@ -73,17 +67,23 @@ public class MessageProcessor : IMessageProcessor
       Console.WriteLine($"User {userRegister.Email} registered successfully.");
 
       // Enviar confirmación a RabbitMQ
-      SendResponseToRabbitMQ(new
+      return new
       {
         Status = "Success",
-        Email = userRegister.Email,
+        userRegister.Email,
         Message = "User registered successfully."
-      });
+
+      };
     }
     catch (Exception ex)
     {
       Console.WriteLine($"Error registering user: {ex.Message}");
-      SendResponseToRabbitMQ(new { Status = "Error", Message = ex.Message });
+      return new
+      {
+        Status = "Error",
+        userRegister.Email,
+        ex.Message
+      };
     }
   }
 
@@ -91,7 +91,7 @@ public class MessageProcessor : IMessageProcessor
   /// Inicia sesión un usuario existente.
   /// </summary>
   /// <param name="userMessage">El mensaje del usuario que contiene los detalles de inicio de sesión.</param>
-  private async Task LoginUser(UserMessage userMessage)
+  private async Task<object> LoginUser(UserMessage userMessage)
   {
     Console.WriteLine("Logging in user...");
     var userLogin = new UserLogin
@@ -106,51 +106,24 @@ public class MessageProcessor : IMessageProcessor
       Console.WriteLine($"User {userLogin.Email} logged in successfully.");
 
       // Enviar confirmación a RabbitMQ
-      SendResponseToRabbitMQ(new
+      return new
       {
         Status = "Success",
-        Email = userLogin.Email,
-        Token = result.Token,
+        userLogin.Email,
+        result.Token,
         Message = "User logged in successfully."
-      });
+
+      };
     }
     catch (Exception ex)
     {
       Console.WriteLine($"Error logging in user: {ex.Message}");
-      SendResponseToRabbitMQ(new { Status = "Error", Message = ex.Message });
+      return new
+      {
+        Status = "Error",
+        userLogin.Email,
+        ex.Message
+      };
     }
-  }
-
-  /// <summary>
-  /// Envía un mensaje de respuesta a RabbitMQ.
-  /// </summary>
-  /// <param name="responseMessage">El mensaje de respuesta a enviar.</param>
-  private void SendResponseToRabbitMQ(object responseMessage)
-  {
-    var factory = new ConnectionFactory()
-    {
-      HostName = Environment.GetEnvironmentVariable("RABBITMQ_HOST"),
-      Port = int.TryParse(Environment.GetEnvironmentVariable("RABBITMQ_PORT"), out int port) ? port : throw new ArgumentNullException("RABBITMQ_PORT"),
-      UserName = Environment.GetEnvironmentVariable("RABBITMQ_USERNAME"),
-      Password = Environment.GetEnvironmentVariable("RABBITMQ_PASSWORD"),
-      VirtualHost = Environment.GetEnvironmentVariable("RABBITMQ_VHOST")
-    };
-
-    using var connection = factory.CreateConnection();
-    using var channel = connection.CreateModel();
-    channel.QueueDeclare(queue: Environment.GetEnvironmentVariable("RABBITMQ_RESPONSES_QUEUE"),
-                         durable: false,
-                         exclusive: false,
-                         autoDelete: false,
-                         arguments: null);
-
-    var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(responseMessage));
-
-    channel.BasicPublish(exchange: "",
-                         routingKey: Environment.GetEnvironmentVariable("RABBITMQ_RESPONSES_QUEUE"),
-                         basicProperties: null,
-                         body: body);
-
-    Console.WriteLine("Sent response message to RabbitMQ: " + responseMessage);
   }
 }
