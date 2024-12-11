@@ -3,40 +3,14 @@ using System.Net.Mail;
 
 namespace ms_auth.Services
 {
-  /// <summary>
-  /// Servicio para enviar correos electrónicos.
-  /// </summary>
   public class EmailService
   {
-    /// <summary>
-    /// Servidor SMTP.
-    /// </summary>
     private readonly string _smtpServer;
-
-    /// <summary>
-    /// Puerto del servidor SMTP.
-    /// </summary>
     private readonly int _smtpPort;
-
-    /// <summary>
-    /// Usuario del servidor SMTP.
-    /// </summary>
     private readonly string _smtpUser;
-
-    /// <summary>
-    /// Contraseña del servidor SMTP.
-    /// </summary>
     private readonly string _smtpPass;
-
-    /// <summary>
-    /// Nombre de la aplicación que envía el correo.
-    /// </summary>
     private readonly string _smtpAppName;
 
-    /// <summary>
-    /// Constructor que inicializa las variables de configuración del servidor SMTP desde las variables de entorno.
-    /// </summary>
-    /// <exception cref="ArgumentNullException">Lanzada cuando alguna variable de entorno necesaria no está definida.</exception>
     public EmailService()
     {
       _smtpServer = Environment.GetEnvironmentVariable("EMAIL_SMTP_SERVER") ?? throw new ArgumentNullException("EMAIL_SMTP_SERVER");
@@ -46,12 +20,6 @@ namespace ms_auth.Services
       _smtpAppName = Environment.GetEnvironmentVariable("EMAIL_SMTP_APP_NAME") ?? throw new ArgumentNullException("EMAIL_SMTP_APP_NAME");
     }
 
-    /// <summary>
-    /// Envía un correo electrónico para restablecer la contraseña.
-    /// </summary>
-    /// <param name="toEmail">Dirección de correo electrónico del destinatario.</param>
-    /// <param name="resetToken">Token de restablecimiento de contraseña.</param>
-    /// <returns>Tarea asincrónica.</returns>
     public async Task SendPasswordResetEmail(string toEmail, string resetToken)
     {
       var fromAddress = new MailAddress(_smtpUser, _smtpAppName);

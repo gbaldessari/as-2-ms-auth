@@ -1,9 +1,10 @@
 using System.Text.Json;
 using ms_auth.Models;
 using ms_auth.Services;
-
+/*
 public class MessageProcessor : IMessageProcessor
 {
+  
   private readonly IAuthService _authService;
 
   /// <summary>
@@ -126,4 +127,6 @@ public class MessageProcessor : IMessageProcessor
       };
     }
   }
+  
 }
+*/

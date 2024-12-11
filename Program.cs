@@ -4,8 +4,6 @@ using System.Text;
 using DotNetEnv;
 using ms_auth.Services;
 using MongoDB.Driver;
-using ms_auth.RabbitMQ;
-using ms_auth.Models;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -54,11 +52,13 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Registrar el cliente de MongoDB
 builder.Services.AddSingleton<IMongoClient, MongoClient>(sp => new MongoClient(mongoConnectionString));
-builder.Services.AddSingleton<IRabbitMQClient, RabbitMQClient>(); // Registrar IRabbitMQClient
-builder.Services.AddScoped<IMessageProcessor, MessageProcessor>();
 
 // Registrar la base de datos de MongoDB
 builder.Services.AddScoped(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(mongoDatabaseName));
+
+// Agregar servicios de Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
@@ -73,13 +73,6 @@ app.UseAuthorization();
 
 // Mapear los controladores
 app.MapControllers();
-
-// Iniciar el consumidor de RabbitMQ
-using (var scope = app.Services.CreateScope())
-{
-    var rabbitMQClient = scope.ServiceProvider.GetRequiredService<IRabbitMQClient>();
-    rabbitMQClient.Consume();
-}
 
 // Ejecutar la aplicación
 app.Run();

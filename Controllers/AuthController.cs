@@ -1,25 +1,20 @@
 using Microsoft.AspNetCore.Mvc;
 using ms_auth.Models;
-using ms_auth.RabbitMQ;
 using ms_auth.Services;
 
 namespace ms_auth.Controllers
 {
-  /// <summary>
-  /// Controlador para la autenticación de usuarios.
-  /// </summary>
   [ApiController]
   [Route("[controller]")]
-  public class AuthController(IAuthService authService, IRabbitMQClient rabbitMQClient) : ControllerBase
+  public class AuthController : ControllerBase
   {
-    private readonly IAuthService _authService = authService;
-    private readonly IRabbitMQClient _rabbitMQClient = rabbitMQClient;
+    private readonly IAuthService _authService;
 
-    /// <summary>
-    /// Inicia sesión de un usuario.
-    /// </summary>
-    /// <param name="userLogin">Datos de inicio de sesión del usuario.</param>
-    /// <returns>Resultado de la autenticación.</returns>
+    public AuthController(IAuthService authService)
+    {
+      _authService = authService;
+    }
+
     [HttpPost("login")]
     public async Task<IActionResult> Login(UserLogin userLogin)
     {
@@ -27,7 +22,6 @@ namespace ms_auth.Controllers
       {
         LoginResult tokens = await _authService.Authenticate(userLogin);
         if (tokens == null) return Unauthorized();
-        _rabbitMQClient.Publish("User logged in: " + userLogin.Email);
         return Ok(tokens);
       }
       catch (UnauthorizedAccessException)
@@ -40,18 +34,12 @@ namespace ms_auth.Controllers
       }
     }
 
-    /// <summary>
-    /// Registra un nuevo usuario.
-    /// </summary>
-    /// <param name="userRegister">Datos de registro del usuario.</param>
-    /// <returns>Resultado del registro.</returns>
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] UserRegister userRegister)
     {
       try
       {
         await _authService.Register(userRegister);
-        _rabbitMQClient.Publish("User registered: " + userRegister.Email);
         return Ok("User registered successfully.");
       }
       catch (Exception ex)
@@ -60,18 +48,12 @@ namespace ms_auth.Controllers
       }
     }
 
-    /// <summary>
-    /// Refresca el token de autenticación.
-    /// </summary>
-    /// <param name="refreshToken">Token de refresco.</param>
-    /// <returns>Nuevo token de autenticación.</returns>
     [HttpPost("refresh-token")]
-    public IActionResult RefreshToken(string refreshToken)
+    public async Task<IActionResult> RefreshToken(string refreshToken)
     {
       try
       {
-        var payload = _authService.RefreshToken(refreshToken);
-        _rabbitMQClient.Publish("Token refreshed for: " + refreshToken);
+        var payload = await _authService.RefreshToken(refreshToken);
         return Ok(payload);
       }
       catch (Exception ex)
@@ -80,11 +62,6 @@ namespace ms_auth.Controllers
       }
     }
 
-    /// <summary>
-    /// Solicita un token de restablecimiento de contraseña.
-    /// </summary>
-    /// <param name="request">Solicitud de restablecimiento de contraseña.</param>
-    /// <returns>Resultado de la solicitud.</returns>
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
@@ -104,11 +81,6 @@ namespace ms_auth.Controllers
       }
     }
 
-    /// <summary>
-    /// Restablece la contraseña del usuario.
-    /// </summary>
-    /// <param name="request">Solicitud de restablecimiento de contraseña.</param>
-    /// <returns>Resultado del restablecimiento.</returns>
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
     {

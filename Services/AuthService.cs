@@ -8,72 +8,26 @@ using System.Security.Cryptography;
 
 namespace ms_auth.Services
 {
-  /// <summary>
-  /// Interfaz que define los métodos del servicio de autenticación.
-  /// </summary>
   public interface IAuthService
   {
-    /// <summary>
-    /// Refresca el token de autenticación.
-    /// </summary>
-    /// <param name="refreshToken">Token de refresco.</param>
-    /// <returns>Respuesta con el nuevo token y el token de refresco.</returns>
-    Response RefreshToken(string refreshToken);
-
-    /// <summary>
-    /// Autentica a un usuario.
-    /// </summary>
-    /// <param name="userLogin">Datos de inicio de sesión del usuario.</param>
-    /// <returns>Resultado del inicio de sesión con el token y el token de refresco.</returns>
+    Task<Response> RefreshToken(string refreshToken);
     Task<LoginResult> Authenticate(UserLogin userLogin);
-
-    /// <summary>
-    /// Registra a un nuevo usuario.
-    /// </summary>
-    /// <param name="userRegister">Datos de registro del usuario.</param>
-    /// <returns>Tarea asincrónica.</returns>
     Task Register(UserRegister userRegister);
-
-    /// <summary>
-    /// Solicita el restablecimiento de contraseña.
-    /// </summary>
-    /// <param name="email">Correo electrónico del usuario.</param>
-    /// <returns>Tarea asincrónica.</returns>
     Task ForgotPassword(string email);
-
-    /// <summary>
-    /// Restablece la contraseña del usuario.
-    /// </summary>
-    /// <param name="resetToken">Token de restablecimiento de contraseña.</param>
-    /// <param name="newPassword">Nueva contraseña.</param>
-    /// <returns>Tarea asincrónica.</returns>
     Task ResetPassword(string resetToken, string newPassword);
   }
 
-  /// <summary>
-  /// Implementación del servicio de autenticación.
-  /// </summary>
   public class AuthService : IAuthService
   {
     private readonly IConfiguration _config;
     private readonly IMongoCollection<User> _usersCollection;
 
-    /// <summary>
-    /// Constructor que inicializa la configuración y la colección de usuarios.
-    /// </summary>
-    /// <param name="config">Configuración de la aplicación.</param>
-    /// <param name="mongoDatabase">Base de datos de MongoDB.</param>
     public AuthService(IConfiguration config, IMongoDatabase mongoDatabase)
     {
       _config = config ?? throw new ArgumentNullException(nameof(config));
       _usersCollection = mongoDatabase.GetCollection<User>("users");
     }
 
-    /// <summary>
-    /// Autentica a un usuario.
-    /// </summary>
-    /// <param name="userLogin">Datos de inicio de sesión del usuario.</param>
-    /// <returns>Resultado del inicio de sesión con el token y el token de refresco.</returns>
     public Task<LoginResult> Authenticate(UserLogin userLogin)
     {
       var user = _usersCollection
@@ -119,11 +73,6 @@ namespace ms_auth.Services
       return Task.FromResult(new LoginResult { Token = jwtToken, RefreshToken = refreshToken });
     }
 
-    /// <summary>
-    /// Registra a un nuevo usuario.
-    /// </summary>
-    /// <param name="userRegister">Datos de registro del usuario.</param>
-    /// <returns>Tarea asincrónica.</returns>
     public async Task Register(UserRegister userRegister)
     {
       var existingUser = await _usersCollection.Find(u => u.Email == userRegister.Email).FirstOrDefaultAsync();
@@ -148,18 +97,13 @@ namespace ms_auth.Services
       await _usersCollection.InsertOneAsync(newUser);
     }
 
-    /// <summary>
-    /// Refresca el token de autenticación.
-    /// </summary>
-    /// <param name="refreshToken">Token de refresco.</param>
-    /// <returns>Respuesta con el nuevo token y el token de refresco.</returns>
-    public Response RefreshToken(string refreshToken)
+    public async Task<Response> RefreshToken(string refreshToken)
     {
       var user = _usersCollection
       .Find(u => u.RefreshToken == refreshToken && u.RefreshTokenExpiryTime > DateTime.UtcNow)
       .FirstOrDefault() ?? throw new Exception("Invalid refresh token.");
 
-      var loginResult = Authenticate(new UserLogin { Email = user.Email, Password = user.Password }).Result;
+      var loginResult = await Authenticate(new UserLogin { Email = user.Email, Password = user.Password });
       var obj = new Response { Token = loginResult.Token, RefreshToken = loginResult.RefreshToken };
       string newToken = obj.Token ?? throw new InvalidOperationException("Token generation failed.");
       var newRefreshToken = GenerateRefreshToken();
@@ -167,14 +111,10 @@ namespace ms_auth.Services
       user.RefreshToken = newRefreshToken;
       user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
 
-      _usersCollection.ReplaceOne(u => u.Id == user.Id, user);
+      await _usersCollection.ReplaceOneAsync(u => u.Id == user.Id, user);
       return new Response { Token = newToken, RefreshToken = newRefreshToken };
     }
 
-    /// <summary>
-    /// Genera un nuevo token de refresco.
-    /// </summary>
-    /// <returns>Nuevo token de refresco.</returns>
     public string GenerateRefreshToken()
     {
       var randomBytes = new byte[64];
@@ -183,11 +123,6 @@ namespace ms_auth.Services
       return Convert.ToBase64String(randomBytes);
     }
 
-    /// <summary>
-    /// Solicita el restablecimiento de contraseña.
-    /// </summary>
-    /// <param name="email">Correo electrónico del usuario.</param>
-    /// <returns>Tarea asincrónica.</returns>
     public async Task ForgotPassword(string email)
     {
       var user = await _usersCollection.Find(u => u.Email == email).FirstOrDefaultAsync();
@@ -206,12 +141,6 @@ namespace ms_auth.Services
       await emailService.SendPasswordResetEmail(user.Email, resetToken);
     }
 
-    /// <summary>
-    /// Restablece la contraseña del usuario.
-    /// </summary>
-    /// <param name="resetToken">Token de restablecimiento de contraseña.</param>
-    /// <param name="newPassword">Nueva contraseña.</param>
-    /// <returns>Tarea asincrónica.</returns>
     public async Task ResetPassword(string resetToken, string newPassword)
     {
       var user = await _usersCollection.Find(u => u.ResetPasswordToken == resetToken && u.ResetPasswordExpiry > DateTime.UtcNow).FirstOrDefaultAsync();

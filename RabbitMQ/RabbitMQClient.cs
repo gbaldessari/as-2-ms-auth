@@ -5,6 +5,7 @@ using System.Text;
 
 namespace ms_auth.RabbitMQ
 {
+  /*
   /// <summary>
   /// Interface para el cliente de RabbitMQ.
   /// </summary>
@@ -111,4 +112,5 @@ namespace ms_auth.RabbitMQ
       _connection?.Close();
     }
   }
+  */
 }
