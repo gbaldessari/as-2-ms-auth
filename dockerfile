@@ -28,7 +28,7 @@ ENV EMAIL_SMTP_PASSWORD="${EMAIL_SMTP_PASSWORD}"
 ENV EMAIL_SMTP_APP_NAME="${EMAIL_SMTP_APP_NAME}"
 
 # Exponer el puerto en el que la aplicación escuchará
-EXPOSE 5012
+EXPOSE 8080
 
 # Configura el punto de entrada para ejecutar la aplicación
 ENTRYPOINT ["dotnet", "ms_auth.dll"]
