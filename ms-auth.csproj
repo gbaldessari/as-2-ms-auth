@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>ms_auth</RootNamespace>
+    <AssemblyName>ms_auth</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

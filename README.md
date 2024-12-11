@@ -6,12 +6,6 @@ JWT_ISSUER
 JWT_AUDIENCE
 MONGO_CONNECTION_STRING
 MONGO_DATABASE_NAME
-RABBITMQ_HOST
-RABBITMQ_PORT
-RABBITMQ_QUEUE
-RABBITMQ_USERNAME
-RABBITMQ_PASSWORD
-RABBITMQ_VHOST
 EMAIL_SMTP_SERVER
 EMAIL_SMTP_PORT
 EMAIL_SMTP_USER
@@ -23,8 +17,8 @@ El proyecto tiene un dockerfile por lo que para ejecutarlo hay que utilizar esto
 buildear imagen
 docker build -t ms_auth .
 
-Ejecutar el contenedor y exponer el puerto 5012 del contenedor al puerto 5012 de tu máquina host:
-docker run -d -p 5012:5012 --env-file .env --name ms_auth_container ms_auth
+Ejecutar el contenedor y exponer el puerto 8080 del contenedor al puerto 8080 de tu máquina host:
+docker run -d -p 8080:8080 --env-file .env --name ms_auth_container ms_auth
 
 Si por alguna razon esto no funciona tambien puede ser ejecutado teniendo
 .net 9.0

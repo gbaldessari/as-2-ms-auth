@@ -16,88 +16,38 @@ namespace ms_auth.Controllers
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(UserLogin userLogin)
+    public async Task<ServiceResponse<LoginResponse>> Login(UserLogin userLogin)
     {
-      try
-      {
-        LoginResult tokens = await _authService.Authenticate(userLogin);
-        if (tokens == null) return Unauthorized();
-        return Ok(tokens);
-      }
-      catch (UnauthorizedAccessException)
-      {
-        return Unauthorized();
-      }
-      catch (Exception ex)
-      {
-        return BadRequest(new { ex.Message });
-      }
+      ServiceResponse<LoginResponse> response = await _authService.Authenticate(userLogin);
+      return response;
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] UserRegister userRegister)
+    public async Task<ServiceResponse<string>> Register([FromBody] UserRegister userRegister)
     {
-      try
-      {
-        await _authService.Register(userRegister);
-        return Ok("User registered successfully.");
-      }
-      catch (Exception ex)
-      {
-        return BadRequest(new { ex.Message });
-      }
+      ServiceResponse<string> response = await _authService.Register(userRegister);
+      return response;
     }
 
     [HttpPost("refresh-token")]
-    public async Task<IActionResult> RefreshToken(string refreshToken)
+    public async Task<ServiceResponse<LoginResponse>> RefreshToken(string refreshToken)
     {
-      try
-      {
-        var payload = await _authService.RefreshToken(refreshToken);
-        return Ok(payload);
-      }
-      catch (Exception ex)
-      {
-        return BadRequest(new { ex.Message });
-      }
+      ServiceResponse<LoginResponse> response = await _authService.RefreshToken(refreshToken);
+      return response;
     }
 
     [HttpPost("forgot-password")]
-    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    public async Task<ServiceResponse<string>> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
-      if (string.IsNullOrEmpty(request.Email))
-      {
-        return BadRequest("Email is required.");
-      }
-
-      try
-      {
-        await _authService.ForgotPassword(request.Email);
-        return Ok("Password reset token sent to email.");
-      }
-      catch (InvalidOperationException ex)
-      {
-        return BadRequest(ex.Message);
-      }
+      ServiceResponse<string> response = await _authService.ForgotPassword(request.Email);
+      return response;
     }
 
     [HttpPost("reset-password")]
-    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    public async Task<ServiceResponse<string>> ResetPassword([FromBody] ResetPasswordRequest request)
     {
-      if (string.IsNullOrEmpty(request.ResetToken) || string.IsNullOrEmpty(request.NewPassword))
-      {
-        return BadRequest("Reset token and new password are required.");
-      }
-
-      try
-      {
-        await _authService.ResetPassword(request.ResetToken, request.NewPassword);
-        return Ok("Password has been reset.");
-      }
-      catch (InvalidOperationException ex)
-      {
-        return BadRequest(ex.Message);
-      }
+      ServiceResponse<string> response = await _authService.ResetPassword(request.ResetToken, request.NewPassword);
+      return response;
     }
   }
 }
